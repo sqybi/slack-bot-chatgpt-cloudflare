@@ -9,24 +9,48 @@
  */
 
 export interface Env {
-	// Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
-	// MY_KV_NAMESPACE: KVNamespace;
-	//
-	// Example binding to Durable Object. Learn more at https://developers.cloudflare.com/workers/runtime-apis/durable-objects/
-	// MY_DURABLE_OBJECT: DurableObjectNamespace;
-	//
-	// Example binding to R2. Learn more at https://developers.cloudflare.com/workers/runtime-apis/r2/
-	// MY_BUCKET: R2Bucket;
-	//
-	// Example binding to a Service. Learn more at https://developers.cloudflare.com/workers/runtime-apis/service-bindings/
-	// MY_SERVICE: Fetcher;
-	//
-	// Example binding to a Queue. Learn more at https://developers.cloudflare.com/queues/javascript-apis/
-	// MY_QUEUE: Queue;
+    SLACK_EVENTS_APP_MENTION: Queue;
+}
+
+interface SlackEvent {
+    type: string;
+}
+
+interface SlackEventUrlVerification extends SlackEvent {
+    type: 'url_verification';
+    challenge: string;
+    token: string;
+}
+
+interface SlackEventAppMention extends SlackEvent {
+    type: 'app_mention';
+    user: string;
+    text: string;
+    ts: string;
+    channel: string;
+    event_ts: string;
 }
 
 export default {
-	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-		return new Response('Hello World!');
-	},
+    async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+        try {
+            if (request.method.toUpperCase() === 'POST') {
+                const event: SlackEvent = await request.json();
+                switch (event.type) {
+                    case 'url_verification':
+                        const urlVerificationEvent = event as SlackEventUrlVerification;
+                        return Response.json({ challenge: urlVerificationEvent.challenge }, { status: 200 });
+                    case 'app_mention':
+                        const appMentionEvent = event as SlackEventAppMention;
+                        await env.SLACK_EVENTS_APP_MENTION.send(appMentionEvent);
+                        return new Response('OK');
+                    default:
+                        return new Response('Error: Unknown event type', { status: 400 });
+                }
+            }
+        } catch (e) {
+            return new Response(`Error: ${e}`, { status: 500 });
+        }
+        return new Response('Method Not Allowed', { status: 405 });
+    },
 };
