@@ -19,12 +19,19 @@ interface SlackEventAppMention extends SlackEvent {
     ts: string;
     channel: string;
     event_ts: string;
+    workspace?: string;
+}
+
+interface QueueEventAppMention {
+    workspace: string;
+    event: SlackEventAppMention;
 }
 
 export default {
     async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
         try {
             if (request.method.toUpperCase() === 'POST') {
+                const workspace: string = request.url.split('/').pop() as string;
                 const event: SlackEvent = await request.json();
                 switch (event.type) {
                     case 'url_verification':
@@ -32,7 +39,11 @@ export default {
                         return Response.json({ challenge: urlVerificationEvent.challenge }, { status: 200 });
                     case 'app_mention':
                         const appMentionEvent = event as SlackEventAppMention;
-                        await env.SLACK_EVENTS_APP_MENTION.send(appMentionEvent, { contentType: 'json' });
+                        const appMentionQueueEvent = {
+                            workspace: workspace,
+                            event: appMentionEvent,
+                        } as QueueEventAppMention;
+                        await env.SLACK_EVENTS_APP_MENTION.send(appMentionQueueEvent, { contentType: 'json' });
                         return new Response('OK');
                     default:
                         return new Response('Error: Unknown event type', { status: 400 });

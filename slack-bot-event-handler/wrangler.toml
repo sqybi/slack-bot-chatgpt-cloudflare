@@ -1,6 +1,9 @@
 name = "slack-bot-event-handler"
 main = "src/index.ts"
 compatibility_date = "2023-10-16"
+routes = [
+    { pattern = "slack-bot.sqybi.top/*", zone_name = "sqybi.top" }
+]
 
 [[queues.producers]]
 binding = "SLACK_EVENTS_APP_MENTION"

@@ -1,0 +1,11 @@
+name = "slack-bot-mention"
+main = "src/index.ts"
+compatibility_date = "2023-10-16"
+kv_namespaces = [
+    { binding = "CONFIG", id = "slack-bot-configuration" }
+]
+
+[[queues.consumers]]
+queue = "slack-events-app-mention"
+max_batch_size = 10
+max_batch_timeout = 3
