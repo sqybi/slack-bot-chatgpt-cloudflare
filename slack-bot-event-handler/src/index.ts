@@ -1,13 +1,3 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
-
 export interface Env {
     SLACK_EVENTS_APP_MENTION: Queue;
 }
@@ -42,7 +32,7 @@ export default {
                         return Response.json({ challenge: urlVerificationEvent.challenge }, { status: 200 });
                     case 'app_mention':
                         const appMentionEvent = event as SlackEventAppMention;
-                        await env.SLACK_EVENTS_APP_MENTION.send(appMentionEvent);
+                        await env.SLACK_EVENTS_APP_MENTION.send(appMentionEvent, { contentType: 'json' });
                         return new Response('OK');
                     default:
                         return new Response('Error: Unknown event type', { status: 400 });
